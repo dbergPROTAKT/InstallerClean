@@ -65,7 +65,11 @@ public static class CrashLog
             // other users' profiles, so anyone attaching this log to a
             // public report needs the disclosure before sharing.
             // Header lines start with # so log readers can skip them.
-            using var writer = new StreamWriter(fs, Encoding.UTF8, leaveOpen: false);
+            #if NET5_0_OR_GREATER
+                        using var writer = new StreamWriter(fs, Encoding.UTF8, leaveOpen: false);
+            #else
+                        using var writer = new StreamWriter(fs, Encoding.UTF8, 1024, leaveOpen: false);
+            #endif
             if (writeHeader)
                 writer.Write(PrivacyHeader);
             var entry = $"---- {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz} ----{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}";
@@ -87,7 +91,11 @@ public static class CrashLog
             if (new FileInfo(LogFile).Length < MaxBytes) return;
             // File.Move with overwrite uses MOVEFILE_REPLACE_EXISTING,
             // which replaces a symlink rather than following it.
-            File.Move(LogFile, ArchiveFile, overwrite: true);
+            #if NET5_0_OR_GREATER
+                        File.Move(LogFile, ArchiveFile, overwrite: true);
+            #else
+                        InstallerClean.Polyfills.Net48Compat.FileMove(LogFile, ArchiveFile, true);
+            #endif
         }
         catch
         {

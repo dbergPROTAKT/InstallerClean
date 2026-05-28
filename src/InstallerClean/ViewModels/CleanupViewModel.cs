@@ -235,6 +235,7 @@ public partial class CleanupViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void BrowseDestination()
     {
+#if NET8_0_OR_GREATER
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
             Title = Strings.FilePicker_ChooseDestinationTitle,
@@ -243,6 +244,16 @@ public partial class CleanupViewModel : ObservableObject, IDisposable
         {
             MoveDestination = dialog.FolderName;
         }
+#else
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = Strings.FilePicker_ChooseDestinationTitle,
+        };
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            MoveDestination = dialog.SelectedPath;
+        }
+#endif
     }
 
     private bool CanCancelOperation() => IsOperating && !IsCancellationRequested;

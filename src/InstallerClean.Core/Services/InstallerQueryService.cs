@@ -2,6 +2,9 @@ using InstallerClean.Interop;
 using InstallerClean.Interop.Native;
 using InstallerClean.Models;
 using InstallerClean.Resources;
+#if !NET5_0_OR_GREATER
+using InstallerClean.Polyfills;
+#endif
 
 namespace InstallerClean.Services;
 
@@ -169,7 +172,7 @@ public sealed class InstallerQueryService : IInstallerQueryService
             // scan if the next call wrote a shorter string. The MSI
             // API zero-terminates so this is belt-and-braces, but the
             // belt is cheap.
-            Array.Clear(productCode);
+            Array.Clear(productCode, 0, productCode.Length);
 
             // pcchSid is the buffer size in characters including the
             // null terminator on the Win32 input. On Success the API
@@ -275,8 +278,8 @@ public sealed class InstallerQueryService : IInstallerQueryService
             // BufferToString's null-scan if the next call wrote a shorter
             // string. The MSI API zero-terminates so this is belt-and-
             // braces; the belt is cheap.
-            Array.Clear(patchCode);
-            Array.Clear(targetProductCode);
+            Array.Clear(patchCode, 0, patchCode.Length);
+            Array.Clear(targetProductCode, 0, targetProductCode.Length);
 
             uint sidLen = 0;
 

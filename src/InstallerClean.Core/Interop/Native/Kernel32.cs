@@ -1,23 +1,19 @@
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
 using System.Runtime.InteropServices.Marshalling;
+#endif
 using Microsoft.Win32.SafeHandles;
 
 namespace InstallerClean.Interop.Native;
 
 /// <summary>
-/// P/Invoke surface for kernel32.dll. Uses the source-generated
-/// <see cref="LibraryImportAttribute"/> stubs rather than DllImport so
-/// the marshalling code is emitted at compile time, free of runtime
-/// reflection and friendly to AOT.
+/// P/Invoke surface for kernel32.dll.
 /// </summary>
 internal static partial class Kernel32
 {
     private const string Library = "kernel32.dll";
 
-    /// <summary>
-    /// Opens a file or directory and returns a handle suitable for
-    /// passing to <see cref="GetFinalPathNameByHandle"/>.
-    /// </summary>
+#if NET7_0_OR_GREATER
     [LibraryImport(Library, EntryPoint = "CreateFileW", SetLastError = true,
                    StringMarshalling = StringMarshalling.Utf16)]
     public static partial SafeFileHandle CreateFile(
@@ -29,12 +25,6 @@ internal static partial class Kernel32
         uint dwFlagsAndAttributes,
         IntPtr hTemplateFile);
 
-    /// <summary>
-    /// Resolves a file handle to its final canonical path, expanding
-    /// junctions and symlinks. The output buffer must be sized in
-    /// characters; the return value is the character count required
-    /// (excluding the null terminator).
-    /// </summary>
     [LibraryImport(Library, EntryPoint = "GetFinalPathNameByHandleW", SetLastError = true)]
     public static partial uint GetFinalPathNameByHandle(
         SafeFileHandle hFile,
@@ -42,11 +32,6 @@ internal static partial class Kernel32
         uint cchFilePath,
         uint dwFlags);
 
-    /// <summary>
-    /// Retrieves disk free-space figures for the volume hosting
-    /// <paramref name="lpDirectoryName"/>. Handles local drives, UNC
-    /// shares and mapped drives uniformly.
-    /// </summary>
     [LibraryImport(Library, EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true,
                    StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -56,16 +41,63 @@ internal static partial class Kernel32
         out ulong lpTotalNumberOfBytes,
         out ulong lpTotalNumberOfFreeBytes);
 
-    /// <summary>
-    /// Reads basic file metadata (attributes, size, timestamps) from an
-    /// open handle. Used to detect whether a CreateFile-with-OPEN_REPARSE_POINT
-    /// handle is pointing at a reparse point or a real file.
-    /// </summary>
     [LibraryImport(Library, EntryPoint = "GetFileInformationByHandle", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetFileInformationByHandle(
         SafeFileHandle hFile,
         out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
+    [LibraryImport(Library, EntryPoint = "OpenProcess", SetLastError = true)]
+    public static partial SafeProcessHandle OpenProcess(
+        uint desiredAccess,
+        [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
+        uint processId);
+
+    [LibraryImport(Library, EntryPoint = "CloseHandle", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool CloseHandle(IntPtr hObject);
+#else
+    [DllImport(Library, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern SafeFileHandle CreateFile(
+        string lpFileName,
+        uint dwDesiredAccess,
+        uint dwShareMode,
+        IntPtr lpSecurityAttributes,
+        uint dwCreationDisposition,
+        uint dwFlagsAndAttributes,
+        IntPtr hTemplateFile);
+
+    [DllImport(Library, EntryPoint = "GetFinalPathNameByHandleW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern uint GetFinalPathNameByHandle(
+        SafeFileHandle hFile,
+        [Out] char[] lpszFilePath,
+        uint cchFilePath,
+        uint dwFlags);
+
+    [DllImport(Library, EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetDiskFreeSpaceEx(
+        string lpDirectoryName,
+        out ulong lpFreeBytesAvailableToCaller,
+        out ulong lpTotalNumberOfBytes,
+        out ulong lpTotalNumberOfFreeBytes);
+
+    [DllImport(Library, EntryPoint = "GetFileInformationByHandle", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetFileInformationByHandle(
+        SafeFileHandle hFile,
+        out BY_HANDLE_FILE_INFORMATION lpFileInformation);
+
+    [DllImport(Library, EntryPoint = "OpenProcess", SetLastError = true)]
+    public static extern SafeProcessHandle OpenProcess(
+        uint desiredAccess,
+        [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
+        uint processId);
+
+    [DllImport(Library, EntryPoint = "CloseHandle", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool CloseHandle(IntPtr hObject);
+#endif
 
     [StructLayout(LayoutKind.Sequential)]
     public struct BY_HANDLE_FILE_INFORMATION
@@ -103,20 +135,7 @@ internal static partial class Kernel32
 
     public const uint FILE_ATTRIBUTE_REPARSE_POINT  = 0x00000400;
 
-    // GetFinalPathNameByHandle flags. VolumeNameDos returns a path of
-    // the form "X:\Folder\..." rather than the raw NT-namespace
-    // "\\?\Volume{guid}\..." form.
     public const uint VOLUME_NAME_DOS = 0x0;
-
-    [LibraryImport(Library, EntryPoint = "OpenProcess", SetLastError = true)]
-    public static partial SafeProcessHandle OpenProcess(
-        uint desiredAccess,
-        [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
-        uint processId);
-
-    [LibraryImport(Library, EntryPoint = "CloseHandle", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool CloseHandle(IntPtr hObject);
 
     public const uint PROCESS_QUERY_INFORMATION = 0x0400;
 }

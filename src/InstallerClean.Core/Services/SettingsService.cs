@@ -72,7 +72,11 @@ public sealed class SettingsService : ISettingsService
             // recoverable settings file in response to a system-wide
             // problem.
             var badFile = _settingsFile + ".bad";
-            try { File.Move(_settingsFile, badFile, overwrite: true); }
+            #if NET5_0_OR_GREATER
+                        try { File.Move(_settingsFile, badFile, overwrite: true); }
+            #else
+                        try { Polyfills.Net48Compat.FileMove(_settingsFile, badFile, true); }
+            #endif
             catch { }
             return new AppSettings();
         }
@@ -104,7 +108,11 @@ public sealed class SettingsService : ISettingsService
                 JsonSerializer.Serialize(fs, settings, JsonOptions);
             }
 
-            File.Move(tempFile, _settingsFile, overwrite: true);
+            #if NET5_0_OR_GREATER
+                        File.Move(tempFile, _settingsFile, overwrite: true);
+            #else
+                        Polyfills.Net48Compat.FileMove(tempFile, _settingsFile, true);
+            #endif
             return true;
         }
         catch (Exception)

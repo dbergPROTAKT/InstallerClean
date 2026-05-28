@@ -2,6 +2,15 @@ using InstallerClean.Models;
 
 namespace InstallerClean.Services;
 
+/// <summary>Constants for <see cref="IResultLogService"/>.</summary>
+public static class ResultLogConstants
+{
+    /// <summary>
+    /// Maximum size of <c>last-run.json</c> the service will read or POST.
+    /// </summary>
+    public const long MaxLogBytes = 64 * 1024;
+}
+
 /// <summary>
 /// Writes the post-cleanup diagnostic log to disk and, on user
 /// request, POSTs the same JSON to No Faff. Each outbound call from
@@ -10,14 +19,6 @@ namespace InstallerClean.Services;
 /// </summary>
 public interface IResultLogService
 {
-    /// <summary>
-    /// Maximum size of <c>last-run.json</c> the service will read or
-    /// POST. The writer caps the JSON at this size by construction
-    /// (the schema's natural size is well under it); a file larger
-    /// than this came from outside the process and is rejected.
-    /// </summary>
-    public const long MaxLogBytes = 64 * 1024;
-
     /// <summary>Absolute path to <c>last-run.json</c> on the local profile.</summary>
     string LastLogPath { get; }
 
@@ -48,7 +49,7 @@ public interface IResultLogService
     /// Reads <see cref="LastLogPath"/> as UTF-8 text and returns the
     /// raw content for display in the confirmation window. Never
     /// throws; returns null when the file doesn't exist, exceeds the
-    /// <see cref="MaxLogBytes"/> cap, or fails to read. Oversize and
+    /// <see cref="ResultLogConstants.MaxLogBytes"/> cap, or fails to read. Oversize and
     /// read-failure cases write a breadcrumb to crash.log.
     /// </summary>
     Task<string?> ReadLastLogAsync(CancellationToken cancellationToken = default);

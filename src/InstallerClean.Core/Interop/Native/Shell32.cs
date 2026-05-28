@@ -10,19 +10,13 @@ internal static partial class Shell32
 {
     private const string Library = "shell32.dll";
 
-    /// <summary>
-    /// Performs a high-level shell file operation (copy, move, delete,
-    /// rename). With <see cref="FO_DELETE"/> + <see cref="FOF_ALLOWUNDO"/>
-    /// it sends the file to the Recycle Bin without UI.
-    /// </summary>
-    /// <remarks>
-    /// SHFileOperationW is documented as superseded by IFileOperation,
-    /// but IFileOperation requires apartment-state COM init and an STA
-    /// thread. For a single-shot Recycle-Bin send from any thread the
-    /// older API stays the right tool.
-    /// </remarks>
+    #if NET7_0_OR_GREATER
     [LibraryImport(Library, EntryPoint = "SHFileOperationW")]
     public static partial int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
+#else
+    [DllImport(Library, EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+    public static extern int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
+#endif
 
     /// <summary>
     /// SHFILEOPSTRUCT for SHFileOperationW. Fully blittable so it

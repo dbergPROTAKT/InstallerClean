@@ -14,7 +14,11 @@ internal sealed class MutexProbe : IMutexProbe
             // and SYNCHRONIZE are not needed and could be denied by a tighter DACL.
             // Mutex.OpenExisting(string) requests both implicitly, so the AccessControl
             // overload is the route that maps to bare OpenMutexW(READ_CONTROL).
-            using var m = MutexAcl.OpenExisting(name, MutexRights.ReadPermissions);
+            #if NET5_0_OR_GREATER
+                        using var m = MutexAcl.OpenExisting(name, MutexRights.ReadPermissions);
+            #else
+                        using var m = Mutex.OpenExisting(name, MutexRights.ReadPermissions);
+            #endif
             return true;
         }
         catch (WaitHandleCannotBeOpenedException)

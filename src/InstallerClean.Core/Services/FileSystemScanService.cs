@@ -196,6 +196,7 @@ public sealed class FileSystemScanService : IFileSystemScanService
         // Installer folder cannot redirect enumeration outside it; Hidden
         // and System stay included because real installer-cache entries
         // sometimes carry those attributes.
+#if NET5_0_OR_GREATER
         var options = new EnumerationOptions
         {
             RecurseSubdirectories = true,
@@ -205,5 +206,9 @@ public sealed class FileSystemScanService : IFileSystemScanService
 
         return _fs.Directory.EnumerateFiles(folder, "*.msi", options)
             .Concat(_fs.Directory.EnumerateFiles(folder, "*.msp", options));
+#else
+        return _fs.Directory.EnumerateFiles(folder, "*.msi", SearchOption.AllDirectories)
+            .Concat(_fs.Directory.EnumerateFiles(folder, "*.msp", SearchOption.AllDirectories));
+#endif
     }
 }

@@ -129,7 +129,7 @@ public sealed class PendingRebootService : IPendingRebootService
 
     /// <summary>Strips the NT object form (\??\) and long-path (\\?\) prefixes used by Session Manager.</summary>
     private static string StripNtPathPrefix(string s) =>
-        s.StartsWith(@"\??\", StringComparison.Ordinal) ? s[4..] :
-        s.StartsWith(@"\\?\", StringComparison.Ordinal) ? s[4..] :
+        s.StartsWith(@"\??\", StringComparison.Ordinal) ? s.Substring(4) :
+        s.StartsWith(@"\\?\", StringComparison.Ordinal) ? s.Substring(4) :
         s;
 }

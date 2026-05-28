@@ -71,7 +71,7 @@ public sealed class UpdateCheckService : IUpdateCheckService
             if (!response.IsSuccessStatusCode)
                 return new CheckFailed(UpdateCheckFailureReason.ServerError);
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken)
+            var json = await response.Content.ReadAsStringAsync()
                 .ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json, JsonParseOptions);
 
@@ -83,7 +83,7 @@ public sealed class UpdateCheckService : IUpdateCheckService
 
             // tag_name on the project's releases is "vX.Y.Z"; strip
             // the leading 'v' before parsing as System.Version.
-            var latestVersion = tagName.StartsWith('v')
+            var latestVersion = tagName.StartsWith("v", StringComparison.Ordinal)
                 ? tagName.Substring(1)
                 : tagName;
             if (!Version.TryParse(latestVersion, out var parsedLatest))

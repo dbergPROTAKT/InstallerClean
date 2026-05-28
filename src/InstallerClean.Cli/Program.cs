@@ -327,7 +327,11 @@ internal static class Program
             // Reject relative destinations: Path.GetFullPath would
             // otherwise resolve them against the process CWD, and the
             // CLI host's CWD is whatever the caller invoked it from.
-            if (!Path.IsPathFullyQualified(dest))
+            #if NET5_0_OR_GREATER
+                        if (!Path.IsPathFullyQualified(dest))
+            #else
+                        if (!InstallerClean.Polyfills.Net48Compat.IsPathFullyQualified(dest))
+            #endif
             {
                 Console.WriteLine(string.Format(Strings.Cli_MoveDestinationRelative, dest));
                 EventLogWriter.Write(EventLogWriter.Level.Warning,

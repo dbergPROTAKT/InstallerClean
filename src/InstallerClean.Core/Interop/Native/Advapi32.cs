@@ -11,6 +11,7 @@ internal static partial class Advapi32
 {
     private const string Library = "advapi32.dll";
 
+#if NET7_0_OR_GREATER
     [LibraryImport(Library, EntryPoint = "OpenProcessToken", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool OpenProcessToken(
@@ -18,10 +19,6 @@ internal static partial class Advapi32
         uint desiredAccess,
         out SafeAccessTokenHandle tokenHandle);
 
-    /// <summary>
-    /// Converts an impersonation token into a primary token for
-    /// <see cref="CreateProcessWithTokenW"/>.
-    /// </summary>
     [LibraryImport(Library, EntryPoint = "DuplicateTokenEx", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool DuplicateTokenEx(
@@ -32,10 +29,6 @@ internal static partial class Advapi32
         TokenType tokenType,
         out SafeAccessTokenHandle newToken);
 
-    /// <summary>
-    /// Spawns a process under <paramref name="token"/>. Requires the
-    /// caller to hold SE_IMPERSONATE_NAME (elevated processes do).
-    /// </summary>
     [LibraryImport(Library, EntryPoint = "CreateProcessWithTokenW", SetLastError = true,
                    StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -49,6 +42,37 @@ internal static partial class Advapi32
         string? currentDirectory,
         ref STARTUPINFO startupInfo,
         out PROCESS_INFORMATION processInformation);
+#else
+    [DllImport(Library, EntryPoint = "OpenProcessToken", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool OpenProcessToken(
+        SafeProcessHandle processHandle,
+        uint desiredAccess,
+        out SafeAccessTokenHandle tokenHandle);
+
+    [DllImport(Library, EntryPoint = "DuplicateTokenEx", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool DuplicateTokenEx(
+        SafeAccessTokenHandle existingToken,
+        uint desiredAccess,
+        IntPtr tokenAttributes,
+        SecurityImpersonationLevel impersonationLevel,
+        TokenType tokenType,
+        out SafeAccessTokenHandle newToken);
+
+    [DllImport(Library, EntryPoint = "CreateProcessWithTokenW", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool CreateProcessWithTokenW(
+        SafeAccessTokenHandle token,
+        uint logonFlags,
+        string applicationName,
+        string commandLine,
+        uint creationFlags,
+        IntPtr environment,
+        string? currentDirectory,
+        ref STARTUPINFO startupInfo,
+        out PROCESS_INFORMATION processInformation);
+#endif
 
     // CharSet is omitted because [assembly: DisableRuntimeMarshalling]
     // ignores it for managed structs; every string-shaped field below

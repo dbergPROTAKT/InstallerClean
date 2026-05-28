@@ -169,6 +169,7 @@ internal static class InstallerCacheHelpers
         // Match FileSystemScanService: skip reparse points so a junction
         // planted inside the Installer folder cannot redirect the prune
         // pass to delete empty directories outside the cache.
+#if NET5_0_OR_GREATER
         var options = new EnumerationOptions
         {
             RecurseSubdirectories = true,
@@ -178,6 +179,10 @@ internal static class InstallerCacheHelpers
 
         foreach (var dir in Directory.EnumerateDirectories(InstallerFolder, "*", options)
             .OrderByDescending(d => d.Length))
+#else
+        foreach (var dir in Directory.EnumerateDirectories(InstallerFolder, "*", SearchOption.AllDirectories)
+            .OrderByDescending(d => d.Length))
+#endif
         {
             cancellationToken.ThrowIfCancellationRequested();
             try

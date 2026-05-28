@@ -28,7 +28,11 @@ public sealed class MoveFilesService : IMoveFilesService
         // Reject relative destinations: Path.GetFullPath would otherwise
         // resolve them against the process CWD, and the CLI host's CWD
         // is whatever the caller invoked it from.
-        if (!Path.IsPathFullyQualified(destinationFolder))
+        #if NET5_0_OR_GREATER
+                if (!Path.IsPathFullyQualified(destinationFolder))
+        #else
+                if (!Polyfills.Net48Compat.IsPathFullyQualified(destinationFolder))
+        #endif
             throw new LocalisedInvalidOperationException(
                 string.Format(Strings.Error_DestinationNotFullyQualified, destinationFolder));
 

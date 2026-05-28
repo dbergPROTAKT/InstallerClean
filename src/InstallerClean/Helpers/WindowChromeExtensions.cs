@@ -70,7 +70,11 @@ internal static class WindowChromeExtensions
             if (fg == IntPtr.Zero) return;
 
             User32.GetWindowThreadProcessId(fg, out uint fgPid);
+#if NET5_0_OR_GREATER
             if (fgPid == (uint)Environment.ProcessId) return;
+#else
+            if (fgPid == (uint)System.Diagnostics.Process.GetCurrentProcess().Id) return;
+#endif
 
             if (suppressed is not null) return;
 

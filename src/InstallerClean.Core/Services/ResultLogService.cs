@@ -73,10 +73,19 @@ public sealed class ResultLogService : IResultLogService
                 if (handle is null)
                     return false;
                 using var fs = new FileStream(handle, FileAccess.Write);
+#if NET5_0_OR_GREATER
                 await fs.WriteAsync(Encoding.UTF8.GetBytes(json), cancellationToken).ConfigureAwait(false);
+#else
+                var bytes = Encoding.UTF8.GetBytes(json);
+                await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+#endif
             }
 
-            File.Move(tempFile, LogFile, overwrite: true);
+            #if NET5_0_OR_GREATER
+                        File.Move(tempFile, LogFile, overwrite: true);
+            #else
+                        InstallerClean.Polyfills.Net48Compat.FileMove(tempFile, LogFile, true);
+            #endif
             return true;
         }
         catch (Exception ex)
@@ -94,7 +103,7 @@ public sealed class ResultLogService : IResultLogService
         // Defence in depth: a caller that builds the body in-memory
         // (rather than piping through ReadLastLogAsync, which enforces
         // MaxLogBytes on read) would otherwise bypass the byte cap.
-        if (Encoding.UTF8.GetByteCount(body) > IResultLogService.MaxLogBytes)
+        if (Encoding.UTF8.GetByteCount(body) > ResultLogConstants.MaxLogBytes)
             return ResultLogSendOutcome.Unknown;
 
         try
@@ -148,17 +157,21 @@ public sealed class ResultLogService : IResultLogService
                 LogFile, FileAccess.Read, StorageHelpers.AtomicOpenMode.OpenExisting);
             if (handle is null) return null;
             using var fs = new FileStream(handle, FileAccess.Read);
-            if (fs.Length > IResultLogService.MaxLogBytes)
+            if (fs.Length > ResultLogConstants.MaxLogBytes)
             {
                 // Oversize is not a normal outcome (writer caps at the
                 // schema's natural size); record it so a "Didn't work"
                 // user report has a breadcrumb to follow.
                 CrashLog.TryWrite(new InvalidDataException(
-                    $"last-run.json exceeds the {IResultLogService.MaxLogBytes}-byte cap and was not read."));
+                    $"last-run.json exceeds the {ResultLogConstants.MaxLogBytes}-byte cap and was not read."));
                 return null;
             }
             using var reader = new StreamReader(fs, Encoding.UTF8);
-            return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            #if NET7_0_OR_GREATER
+                        return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            #else
+                        return await reader.ReadToEndAsync().ConfigureAwait(false);
+            #endif
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
